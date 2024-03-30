@@ -54,8 +54,119 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-
+                    MyScaffold()
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MyScaffold() {
+
+    val navController = rememberNavController()
+    val bottomSheetScaffoldState = rememberBottomSheetScaffoldState()
+    var showBottomSheet by remember {
+        mutableStateOf(false)
+    }
+
+    Scaffold(
+        topBar = { CustomTopAppBar(navController = navController) },
+        bottomBar = { CustomBottomNavBar(navController = navController) },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showBottomSheet = true }) {
+                Icon(imageVector = Icons.Default.AccountCircle, contentDescription = "Hello World")
+            }
+        }
+    ) { contentPadding ->
+        BottomSheetScaffold(
+            scaffoldState = bottomSheetScaffoldState,
+            sheetPeekHeight = 0.dp,
+            sheetContent = {
+                if (showBottomSheet) {
+                    MyBottomSheet(
+                        onSubmit = { showBottomSheet = false },
+                        onReset = { showBottomSheet = false },
+                        onDismiss = {
+                            showBottomSheet = false
+                        }
+                    )
+                }
+            }
+        ) {
+            DestinationsNavHost(
+                navController = navController,
+                navGraph = NavGraphs.root,
+                modifier = Modifier.padding(contentPadding)
+            )
+        }
+    }
+
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomTopAppBar(navController: NavController) {
+    val currentDestination: Destination =
+        navController.appCurrentDestinationAsState().value
+            ?: NavGraphs.root.startAppDestination
+
+    TopAppBar(
+        title = {
+            when {
+                currentDestination.route.contains("detail") -> Text(text = "Person Details")
+                currentDestination.route.contains("search") -> Text(text = "Person Search")
+                else -> Text(text = "Home")
+            }
+        },
+        navigationIcon = {
+            if (currentDestination.route.contains("detail")) {
+                IconButton(
+                    onClick = { navController.navigateUp() }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Up Button"
+                    )
+                }
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = colorResource(id = R.color.purple_500),
+            navigationIconContentColor = Color.White,
+            titleContentColor = Color.White
+        )
+    )
+}
+
+@Composable
+fun CustomBottomNavBar(
+    navController: NavController
+) {
+    val currentDestination: Destination =
+        navController.appCurrentDestinationAsState().value
+            ?: NavGraphs.root.startAppDestination
+
+    if (!currentDestination.route.contains("detail_screen")) {
+        BottomAppBar {
+            BottomNavigationSpec.entries.forEach { destination ->
+                NavigationBarItem(
+                    selected = currentDestination == destination.direction,
+                    onClick = {
+
+                        navController.navigate(destination.direction) {
+
+                            popUpTo(NavGraphs.root) {
+                                inclusive = false
+                            }
+
+                            launchSingleTop = true
+                        }
+                    },
+                    icon = { Icon(destination.icon, contentDescription = destination.label) },
+                    label = { Text(destination.label) }
+                )
             }
         }
     }
